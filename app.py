@@ -11,8 +11,8 @@ load_dotenv()
 
 # ─── Page Config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AI Video Assistant",
-    page_icon="🎬",
+    page_title="MeetMind AI",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -331,12 +331,27 @@ def render_step_bar(label: str, key: str, icon: str):
 
 # ─── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown('<div class="hero-title" style="font-size:1.6rem">🎬 AI<br>Video</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-sub">Meeting Intelligence</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title" style="font-size:1.6rem">🧠 MeetMind<br>AI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-sub">VIDEO → KNOWLEDGE → ACTION</div>', unsafe_allow_html=True)
     st.markdown("---")
 
     st.markdown('<span class="badge badge-purple">Input</span>', unsafe_allow_html=True)
-    source = st.text_input("YouTube URL or File Path", placeholder="https://youtube.com/watch?v=... or /path/to/file.mp4")
+    source_type = st.radio("Source", ["YouTube", "Local File"], horizontal=True, label_visibility="collapsed")
+    
+    source = ""
+    local_path = ""
+    if source_type == "YouTube":
+        source = st.text_input("YouTube URL", placeholder="https://youtube.com/watch?v=...")
+    else:
+        uploaded_file = st.file_uploader("Upload Media", type=["mp4", "mov", "mkv", "avi", "webm", "mp3", "wav", "m4a"])
+        if uploaded_file is not None:
+            import os
+            os.makedirs("temp_uploads", exist_ok=True)
+            safe_name = "".join([c for c in uploaded_file.name if c.isalpha() or c.isdigit() or c in (' ', '.', '_', '-')]).rstrip()
+            local_path = os.path.join("temp_uploads", safe_name)
+            with open(local_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            source = local_path
 
     language = st.selectbox("Language", ["english", "hinglish"], index=0)
 
@@ -346,24 +361,26 @@ with st.sidebar:
         st.markdown("---")
         st.markdown('<span class="badge badge-green">Pipeline Status</span>', unsafe_allow_html=True)
         for step, icon, label in [
-            ("audio",      "🔊", "Audio Processing"),
-            ("transcript", "📝", "Transcription"),
-            ("title",      "🏷️", "Title Generation"),
-            ("summary",    "📋", "Summarisation"),
-            ("extract",    "🔍", "Extraction"),
-            ("rag",        "🧠", "RAG Engine"),
+            ("audio",      "🔊", "Preparing Media"),
+            ("transcript", "📝", "Generating Transcript"),
+            ("title",      "🏷️", "Understanding Session"),
+            ("summary",    "📋", "Generating Summary"),
+            ("extract",    "🔍", "Finding Decisions & Actions"),
+            ("rag",        "🧠", "Building AI Knowledge Base"),
         ]:
             render_step_bar(label, step, icon)
 
 # ─── Main Area ──────────────────────────────────────────────────────────────────
-st.markdown('<div class="hero-title">AI Video Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-sub">Transcribe · Summarise · Chat with your meetings</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">MeetMind AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-sub">Turn every conversation into actionable intelligence.</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ── Run Pipeline ────────────────────────────────────────────────────────────────
 if run_btn:
-    if not source.strip():
-        st.error("Please enter a YouTube URL or file path.")
+    if source_type == "YouTube" and not source.strip():
+        st.error("Please enter a valid YouTube URL.")
+    elif source_type == "Local File" and not source.strip():
+        st.error("Please upload a supported video or audio file.")
     else:
         st.session_state.pipeline_done = False
         st.session_state.result = None
@@ -433,7 +450,7 @@ if st.session_state.result:
     # Title banner
     st.markdown(f"""
     <div class="card">
-        <div class="card-title">📌 Session Title</div>
+        <div class="card-title">📌 Session Overview</div>
         <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--text)">
             {r['title']}
         </div>
@@ -480,7 +497,7 @@ if st.session_state.result:
     st.markdown("---")
 
     # ── RAG Chat ──────────────────────────────────────────────────────────────
-    st.markdown('<div style="font-family:\'Syne\',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:1rem">💬 Chat with your Meeting</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-family:\'Syne\',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:1rem">💬 Ask MeetMind</div>', unsafe_allow_html=True)
 
     # Chat history display
     if st.session_state.chat_history:
@@ -504,13 +521,13 @@ if st.session_state.result:
         st.markdown("""
         <div class="card" style="text-align:center;padding:2rem">
             <div style="font-size:2rem;margin-bottom:0.5rem">💬</div>
-            <div style="color:var(--text-muted);font-size:0.85rem">Ask anything about your meeting transcript</div>
+            <div style="color:var(--text-muted);font-size:0.85rem">Ask anything about this video or session</div>
         </div>""", unsafe_allow_html=True)
 
     # Chat input
     chat_col1, chat_col2 = st.columns([5, 1], gap="small")
     with chat_col1:
-        user_input = st.text_input("Your question", placeholder="What were the main decisions made?", label_visibility="collapsed")
+        user_input = st.text_input("Your question", placeholder="What decisions were made?", label_visibility="collapsed")
     with chat_col2:
         send_btn = st.button("Send →", use_container_width=True)
 
@@ -530,12 +547,12 @@ else:
     # Empty state
     st.markdown("""
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 2rem;text-align:center">
-        <div style="font-size:4rem;margin-bottom:1rem">🎬</div>
+        <div style="font-size:4rem;margin-bottom:1rem">🧠</div>
         <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">
             Ready to Analyse
         </div>
         <div style="color:var(--text-muted);font-size:0.85rem;max-width:380px;line-height:1.7">
-            Paste a YouTube URL or local file path in the sidebar, choose your language, and hit <strong>Analyse</strong> to get started.
+            Provide a YouTube URL or upload a local file in the sidebar, choose your language, and hit <strong>Analyse</strong> to uncover knowledge.
         </div>
         <div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">
             <span class="badge badge-purple">Transcription</span>

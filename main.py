@@ -9,12 +9,12 @@ from core.rag_engine import build_rag_chain, ask_question
 load_dotenv()
 
 def run_pipeline(source :str, language :str = "english") -> dict:
-    print("starting AI Video Assistant")
+    print("starting MeetMind AI")
 
     chunks = process_input(source)
 
     transcript = transcribe_all(chunks,language)
-    print(f"raw transcription (first 300 characters ) {transcript[:300]}")
+    print(f"raw transcript (first 300 characters ) {transcript[:300]}")
 
     title = generate_title(transcript)
 
@@ -51,8 +51,8 @@ if __name__ == "__main__":
     print(f"\n❓ Open Questions:\n{result['open_questions']}")
     print("=" * 60)
 
-    # Phase 2 — Chat with your meeting via RAG
-    print("\n💬 Chat with your meeting (type 'exit' to quit)\n")
+    # Phase 2 — Chat with your session via RAG
+    print("\n💬 Chat with your session (type 'exit' to quit)\n")
     rag_chain = result["rag_chain"]
     while True:
         question = input("You: ").strip()

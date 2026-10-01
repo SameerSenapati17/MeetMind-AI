@@ -1,1 +1,19 @@
+# Environments
 .env
+.venv/
+__pycache__/
+
+# MeetMind AI Generated Data
+downloads/
+temp_uploads/
+vector_db/
+
+# Media Files
+*.wav
+*.mp4
+*.webm
+*.mkv
+*.mov
+*.m4a
+*.mp3
+*.avi

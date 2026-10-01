@@ -27,15 +27,15 @@ def build_rag_chain(transcript:str):
 
         [(
             "system",
-            """You are an expert meeting assistant. Answer the user's question 
-based ONLY on the meeting transcript context provided below.
+            """You are an expert session assistant. Answer the user's question 
+based ONLY on the session transcript context provided below.
 
 If the answer is not found in the context, say: 
-"I could not find this information in the meeting transcript."
+"I could not find this information in the session transcript."
 
 Always be concise and precise. If quoting someone, mention it clearly.
 
-Context from meeting transcript:
+Context from session transcript:
 {context}""",
         ),
         ("human", "{question}"),
@@ -57,21 +57,21 @@ Context from meeting transcript:
 
 def load_rag_chain():
     vector_store = load_vector_store()
-    retriver = get_retriever()
+    retriever = get_retriever()
 
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
         (
             "system",
-            """You are an expert meeting assistant. Answer the user's question 
-based ONLY on the meeting transcript context provided below.
+            """You are an expert session assistant. Answer the user's question 
+based ONLY on the session transcript context provided below.
 
 If the answer is not found in the context, say: 
-"I could not find this information in the meeting transcript."
+"I could not find this information in the session transcript."
 
 Always be concise and precise. If quoting someone, mention it clearly.
 
-Context from meeting transcript:
+Context from session transcript:
 {context}""",
         ),
         ("human", "{question}"),
@@ -79,7 +79,7 @@ Context from meeting transcript:
 
     rag_chain = (
         {
-            "context":  retriver| RunnableLambda(format_docs),
+            "context":  retriever| RunnableLambda(format_docs),
             "question": RunnablePassthrough(),
         }
         | prompt

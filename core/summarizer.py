@@ -23,7 +23,7 @@ def summarize(transcript : str) -> str:
 
     map_prompt = ChatPromptTemplate.from_messages(
         [
-        ("system", "Summarize this portion of a meeting transcript concisely."),
+        ("system", "Summarize this portion of a session transcript concisely."),
         ("human", "{text}"),
     ]
     )
@@ -40,8 +40,8 @@ def summarize(transcript : str) -> str:
         [
         (
             "system",
-            "You are an expert meeting summarizer. Combine these partial summaries "
-            "into one final professional meeting summary in bullet points.",
+            "You are an expert session summarizer. Combine these partial summaries "
+            "into one final professional session summary in bullet points.",
         ),
         ("human", "{text}"),
     ]
@@ -53,7 +53,7 @@ def summarize(transcript : str) -> str:
 
     return combined_chain.invoke(combined)
 
-def generate_title(transcipt : str) -> str:
+def generate_title(transcript : str) -> str:
     llm = get_llm()
 
     
@@ -63,7 +63,7 @@ def generate_title(transcipt : str) -> str:
         ChatPromptTemplate.from_messages([
              (
                 "system",
-                "Based on the meeting transcript, generate a short professional meeting title "
+                "Based on the session transcript, generate a short professional session title "
                 "(max 8 words). Only return the title, nothing else.",
             ),
             ("human", "{text}"),
@@ -72,7 +72,7 @@ def generate_title(transcipt : str) -> str:
         |StrOutputParser()
     )
 
-    return title_chain.invoke(transcipt[:2000])
+    return title_chain.invoke(transcript[:2000])
 
 
 
