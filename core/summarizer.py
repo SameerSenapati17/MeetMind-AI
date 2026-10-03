@@ -42,21 +42,14 @@ def _to_text(value) -> str:
     if isinstance(value, str):
         return value
 
-    if isinstance(value, list):
-        return "\n".join(
-            f"• {item}" if isinstance(item, str)
-            else f"• {json.dumps(item, ensure_ascii=False)}"
-            for item in value
-        )
-
-    if isinstance(value, dict):
+    if isinstance(value, (list, dict)):
         return json.dumps(
             value,
-            ensure_ascii=False,
-            indent=2
+            ensure_ascii=False
         )
 
     return str(value)
+
 
 
 def analyze_transcript(transcript: str) -> dict:

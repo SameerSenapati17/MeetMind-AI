@@ -29,13 +29,20 @@ def load_model():
     return _model 
 
 
-def transcribe_chunk_whisper(chunk_path: str) -> str:
-
-    model = load_model()  
-
-    result = model.transcribe(chunk_path, task="transcribe")  
-    return result["text"]  
-
+def transcribe_chunk_whisper(chunk_path: str, offset: float = 0.0) -> list:
+    model = load_model()
+    result = model.transcribe(chunk_path, task="transcribe")
+    segments = []
+    for s in result.get("segments", []):
+        text = s.get("text", "").strip()
+        if text:
+            segments.append({
+                "start": s.get("start", 0.0) + offset,
+                "end": s.get("end", 0.0) + offset,
+                "text": text,
+                "speaker": None
+            })
+    return segments
 
 def _send_to_sarvam(piece_path: str) -> str:
     """Send one ≤30s WAV file to Sarvam and return the English transcript."""
@@ -60,7 +67,7 @@ def _send_to_sarvam(piece_path: str) -> str:
     return response.json().get("transcript", "")
 
 
-def transcribe_chunk_sarvam(chunk_path: str) -> str:
+def transcribe_chunk_sarvam(chunk_path: str, offset: float = 0.0) -> list:
     """
     Sarvam sync API only accepts ≤30s audio. We split this chunk into
     25-second pieces, send each separately, and join the transcripts.
@@ -68,10 +75,10 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
     if not SARVAM_API_KEY:
         raise RuntimeError("SARVAM_API_KEY is not set in environment / .env")
 
-    audio = AudioSegment.from_wav(chunk_path)
+    audio = AudioSegment.from_file(chunk_path)
     piece_ms = SARVAM_PIECE_SECONDS * 1000
 
-    full_text = ""
+    segments = []
     total_pieces = (len(audio) + piece_ms - 1) // piece_ms
 
     for i, start in enumerate(range(0, len(audio), piece_ms)):
@@ -81,43 +88,68 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
 
         try:
             print(f"  → Sarvam piece {i + 1}/{total_pieces} ...")
-            full_text += _send_to_sarvam(piece_path) + " "
+            text = _send_to_sarvam(piece_path).strip()
+            if text:
+                segments.append({
+                    "start": (start / 1000.0) + offset,
+                    "end": ((start + len(piece)) / 1000.0) + offset,
+                    "text": text,
+                    "speaker": None
+                })
         finally:
             if os.path.exists(piece_path):
                 os.remove(piece_path)
 
-    return full_text.strip()
-
-   
+    return segments
 
 
-
-def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
+def transcribe_chunk(chunk_path: str, language: str = "english", offset: float = 0.0) -> list:
     """
     Route one chunk to Whisper or Sarvam depending on language choice.
     - english  → Whisper (local model)
     - hinglish → Sarvam (translates to English while transcribing)
     """
     if language.lower() == "hinglish":
-        return transcribe_chunk_sarvam(chunk_path)
-    return transcribe_chunk_whisper(chunk_path)
+        return transcribe_chunk_sarvam(chunk_path, offset=offset)
+    return transcribe_chunk_whisper(chunk_path, offset=offset)
 
 
-def transcribe_all(chunks: list, language: str = "english") -> str:
-
-    full_transcript = "" 
-
+def transcribe_all(chunks, language: str = "english") -> list:
+    full_segments = []
     engine = "Sarvam AI" if language.lower() == "hinglish" else "Whisper"
     print(f"Using {engine} for transcription.")
+    
+    # Handle single string path passed as 'chunks'
+    if isinstance(chunks, str):
+        chunks = [chunks]
 
-    for i, chunk in enumerate(chunks):  
+    current_offset = 0.0
 
+    for i, chunk in enumerate(chunks):
         print(f"Transcribing chunk {i + 1}/{len(chunks)}...")
+        
+        # Validation
+        if not os.path.exists(chunk):
+            print(f"Chunk {chunk} does not exist, skipping.")
+            continue
+        if os.path.getsize(chunk) == 0:
+            print(f"Chunk {chunk} is empty, skipping.")
+            continue
+            
+        audio = AudioSegment.from_file(chunk)
+        duration_sec = len(audio) / 1000.0
+        
+        if duration_sec <= 0:
+            print(f"Chunk {chunk} has 0 duration, skipping.")
+            continue
 
-        text = transcribe_chunk(chunk, language=language)  
-
-        full_transcript += text + " "  
+        segments = transcribe_chunk(chunk, language=language, offset=current_offset)
+        
+        # Ensure only non-empty text segments are included
+        valid_segments = [s for s in segments if s.get("text", "").strip()]
+        full_segments.extend(valid_segments)
+        
+        current_offset += duration_sec
 
     print("Transcription complete.")
-
-    return full_transcript.strip()  
+    return full_segments

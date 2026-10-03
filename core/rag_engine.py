@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 
 from core.vector_store import (
     build_vector_store,
@@ -30,12 +29,13 @@ def format_docs(docs):
     )
 
 
-def create_rag_chain(vector_store):
+def create_rag_chain(vector_store, session_id: str = None):
 
     # IMPORTANT:
     # get_retriever requires the vector_store.
     retriever = get_retriever(
         vector_store,
+        session_id=session_id,
         k=4
     )
 
@@ -72,39 +72,38 @@ Context from session transcript:
         ]
     )
 
-    rag_chain = (
-        {
-            "context": retriever | RunnableLambda(format_docs),
-            "question": RunnablePassthrough(),
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+    def invoke_rag(question: str):
+        docs = retriever.invoke(question)
+        context = format_docs(docs)
+        answer = (prompt | llm | StrOutputParser()).invoke({
+            "context": context,
+            "question": question
+        })
+        return {"answer": answer, "sources": docs}
 
-    return rag_chain
-
-
-def build_rag_chain(transcript: str):
-
-    vector_store = build_vector_store(transcript)
-
-    return create_rag_chain(vector_store)
+    return invoke_rag
 
 
-def load_rag_chain():
+def build_rag_chain(transcript: str, session_id: str):
+
+    vector_store = build_vector_store(transcript, session_id)
+
+    return create_rag_chain(vector_store, session_id)
+
+
+def load_rag_chain(session_id: str = None):
 
     vector_store = load_vector_store()
 
-    return create_rag_chain(vector_store)
+    return create_rag_chain(vector_store, session_id)
 
 
-def ask_question(rag_chain, question: str) -> str:
+def ask_question(rag_chain, question: str) -> dict:
 
     print(f"Question: {question}")
 
-    answer = rag_chain.invoke(question)
+    result = rag_chain(question)
 
-    print(f"Answer: {answer}")
+    print(f"Answer: {result['answer']}")
 
-    return answer
+    return result

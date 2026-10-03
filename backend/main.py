@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.database.database import engine, Base
 from backend.api import sessions, upload, chat, export
 import os
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

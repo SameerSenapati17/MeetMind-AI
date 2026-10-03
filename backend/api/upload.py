@@ -28,10 +28,17 @@ async def upload_file(
     session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
+    # Prevent re-uploading to a session that is already processing or completed
+    if session.status in ("processing", "completed"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Session is already in '{session.status}' state. Create a new session to analyze another file."
+        )
         
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in SUPPORTED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Unsupported media format")
+        raise HTTPException(status_code=400, detail=f"Unsupported media format '{ext}'. Supported: {', '.join(SUPPORTED_EXTENSIONS)}")
         
     # Read to check size
     contents = await file.read()

@@ -6,7 +6,9 @@ export interface Session {
   action_items: string | null;
   decisions: string | null;
   open_questions: string | null;
-  transcript: TranscriptSegment[];
+  transcript: TranscriptSegment[] | null;
+  source_type: string | null;
+  created_at: string | null;
 }
 
 export interface TranscriptSegment {

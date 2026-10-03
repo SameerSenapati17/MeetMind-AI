@@ -6,6 +6,9 @@ __pycache__/
 # MeetMind AI Generated Data
 downloads/
 temp_uploads/
+uploads/
+generated/
+exports/
 vector_db/
 
 # Media Files
@@ -17,8 +20,11 @@ vector_db/
 *.m4a
 *.mp3
 *.avi
+*.tmp
+*.part
+*.chunk
 
-# SQLite
+# SQLite (Local state)
 *.db
 *.sqlite
 *.sqlite3

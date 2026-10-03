@@ -37,6 +37,8 @@ def list_sessions(db: Session = Depends(get_db)):
             "action_items": s.action_items,
             "decisions": s.decisions,
             "open_questions": s.open_questions,
+            "source_type": s.source_type,
+            "created_at": s.created_at,
         })
     return results
 
@@ -72,4 +74,6 @@ def get_session(id: str, db: Session = Depends(get_db)):
         "action_items": session.action_items,
         "decisions": session.decisions,
         "open_questions": session.open_questions,
+        "source_type": session.source_type,
+        "created_at": session.created_at,
     }

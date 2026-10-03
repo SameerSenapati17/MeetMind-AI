@@ -27,3 +27,11 @@ class SessionModel(Base):
     progress = Column(Integer, default=0)
     stage = Column(String, default="queued")
 
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    session_id = Column(String, index=True)
+    role = Column(String, nullable=False) # 'user' or 'assistant'
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

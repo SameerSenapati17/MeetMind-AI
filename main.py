@@ -11,31 +11,50 @@ load_dotenv()
 def run_pipeline(source :str, language :str = "english") -> dict:
     print("starting MeetMind AI")
 
-    chunks = process_input(source)
-
-    transcript = transcribe_all(chunks,language)
-    print(f"raw transcript (first 300 characters ) {transcript[:300]}")
-
-    title = generate_title(transcript)
-
-    summary = summarize(transcript)
-
-    action_item = extract_action_items(transcript)
-
-    decisions = extract_key_decisions(transcript)
-    questions = extract_questions(transcript)
+    # To track temporary files for cleanup
+    wav_path = None
+    chunks = []
     
-    rag_chain = build_rag_chain(transcript)
+    try:
+        from utils.audio_processor import download_youtube_audio, convert_to_wav, chunk_audio
+        if source.startswith("http://") or source.startswith("https://"):
+            print("Detected YouTube URL. Downloading audio...")
+            wav_path = download_youtube_audio(source)
+        else:
+            print("Detected local file. Converting to WAV...")
+            wav_path = convert_to_wav(source)
 
-    return {
-        "title": title,
-        "transcript": transcript,
-        "summary": summary,
-        "action_items": action_item,
-        "key_decisions": decisions,
-        "open_questions": questions,
-        "rag_chain": rag_chain,
-    }
+        print("Chunking audio...")
+        chunks = chunk_audio(wav_path)
+        print(f"Audio ready — {len(chunks)} chunk(s) created.")
+
+        transcript = transcribe_all(chunks, language)
+        print(f"raw transcript (first 300 characters ) {str(transcript)[:300]}")
+
+        title = generate_title(transcript)
+        summary = summarize(transcript)
+        action_item = extract_action_items(transcript)
+        decisions = extract_key_decisions(transcript)
+        questions = extract_questions(transcript)
+        rag_chain = build_rag_chain(transcript)
+
+        return {
+            "title": title,
+            "transcript": transcript,
+            "summary": summary,
+            "action_items": action_item,
+            "key_decisions": decisions,
+            "open_questions": questions,
+            "rag_chain": rag_chain,
+        }
+    finally:
+        from utils.audio_processor import cleanup_audio_files
+        files_to_clean = chunks.copy()
+        if wav_path:
+            files_to_clean.append(wav_path)
+        # In a real app we might want to keep the original source if it was downloaded,
+        # but here we clean up the converted wav_path and chunks.
+        cleanup_audio_files(files_to_clean)
 
 if __name__ == "__main__":
     # CLI entry point

@@ -28,6 +28,8 @@ class SessionResultResponse(BaseModel):
     action_items: Optional[str] = None
     decisions: Optional[str] = None
     open_questions: Optional[str] = None
+    source_type: Optional[str] = None
+    created_at: Optional[datetime] = None
 
 class ChatRequest(BaseModel):
     message: str
@@ -39,3 +41,9 @@ class ChatSource(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: List[ChatSource]
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    role: str
+    content: str
+    created_at: datetime

@@ -116,6 +116,17 @@ def chunk_audio(wav_path: str, chunk_minutes: int = 10) -> list:
 
     return chunks
 
+def cleanup_audio_files(paths: list):
+    """Clean up temporary audio chunks and converted files"""
+    for path in paths:
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+                print(f"Cleaned up temporary file: {path}")
+            except Exception as e:
+                print(f"Failed to clean up {path}: {e}")
+
+
 
 def process_input(source: str) -> list:
     if source.startswith("http://") or source.startswith("https://"):
